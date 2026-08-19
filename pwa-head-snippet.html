@@ -1,0 +1,28 @@
+<!--
+  Paste these tags into the <head> of your app's entry HTML.
+  They tell iOS + Android that this page is an installable PWA.
+-->
+
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#161826">
+<meta name="color-scheme" content="dark">
+
+<!-- iOS home-screen support (Safari ignores manifest icons) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daly">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+
+<!-- Windows tile color -->
+<meta name="msapplication-TileColor" content="#161826">
+
+<!-- Register the service worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .catch((err) => console.warn('SW registration failed', err));
+    });
+  }
+</script>
