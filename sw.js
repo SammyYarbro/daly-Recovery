@@ -1,63 +1,31 @@
-// Daly Recovery — service worker
-// Bump CACHE_VERSION whenever you ship an updated app shell.
-const CACHE_VERSION = 'daly-recovery-v1';
-const APP_SHELL = [
+const CACHE_NAME = 'daly-recovery-v1';
+const SHELL_FILES = [
   '/',
   '/index.html',
-  '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/apple-touch-icon.png',
+  '/manifest.webmanifest'
 ];
 
-self.addEventListener('install', (event) => {
+// Install — cache the app shell
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL_FILES))
   );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
+// Activate — clear old caches
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-// Network-first for HTML (so residents always see the latest UI when online),
-// cache-first for static assets (fast, works offline).
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  if (req.method !== 'GET') return;
-
-  const url = new URL(req.url);
-  const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
-
-  if (isHTML) {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_VERSION).then((c) => c.put(req, copy));
-          return res;
-        })
-        .catch(() => caches.match(req).then((hit) => hit || caches.match('/')))
-    );
-    return;
-  }
-
+// Fetch — serve from cache, fall back to network
+self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(req).then((hit) => {
-      if (hit) return hit;
-      return fetch(req).then((res) => {
-        if (res.ok && url.origin === self.location.origin) {
-          const copy = res.clone();
-          caches.open(CACHE_VERSION).then((c) => c.put(req, copy));
-        }
-        return res;
-      });
-    })
+    caches.match(event.request).then(cached => cached || fetch(event.request))
   );
 });
